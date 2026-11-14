@@ -1,32 +1,70 @@
+// Command convertix démarre l'API de conversion d'unités.
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/Dhia-sel/convertix/internal/api"
+)
+
+const (
+	defaultPort     = "8080"
+	shutdownTimeout = 10 * time.Second
 )
 
 func main() {
-	
-	
-	// TODO 1 : lire PORT (os.Getenv), valeur par défaut "8080"
-	PORT := os.Getenv("PORT")
-	if PORT == "" {
-		PORT = "8080"
+	if err := run(); err != nil {
+		log.Fatal(err)
 	}
-	// TODO 2 : construire le http.Server (Addr, Handler, 4 délais)
-	httpServer := &http.Server{
-		Addr:    ":" + PORT,
-		Handler: api.NewHandler(),
+}
+
+func run() error {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = defaultPort
 	}
-	// TODO 3 : lancer ListenAndServe dans une goroutine
-	listenandServeErr := make(chan error, 1)
-	go func() {
-		log.Printf("Serveur démarré sur le port %s", PORT)
-		listenandServeErr <- httpServer.ListenAndServe()
-	}()
-	// TODO 4 : attendre SIGINT ou SIGTERM (signal.NotifyContext)
+
+	srv := &http.Server{
+		Addr:              ":" + port,
+		Handler:           api.NewHandler(),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
 	signalCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	// TODO 5 : arrêter proprement avec srv.Shutdown et un contexte avec délai
-	srvShutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+	serverErr := make(chan error, 1)
+	go func() {
+		log.Printf("serveur démarré sur le port %s", port)
+		serverErr <- srv.ListenAndServe()
+	}()
+
+	select {
+	case err := <-serverErr:
+		return fmt.Errorf("serveur : %w", err)
+	case <-signalCtx.Done():
+	}
+
+	stop()
+	log.Println("arrêt en cours...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		return fmt.Errorf("arrêt : %w", err)
+	}
+
+	log.Println("serveur arrêté proprement")
+	return nil
 }
