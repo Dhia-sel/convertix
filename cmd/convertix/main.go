@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -20,19 +21,23 @@ const (
 )
 
 func main() {
-	if err := run(); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func run() error {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
 	}
 
+	ln, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := run(context.Background(), ln); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run(ctx context.Context, ln net.Listener) error {
 	srv := &http.Server{
-		Addr:              ":" + port,
 		Handler:           api.NewHandler(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
@@ -40,13 +45,13 @@ func run() error {
 		IdleTimeout:       60 * time.Second,
 	}
 
-	signalCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	signalCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	serverErr := make(chan error, 1)
 	go func() {
-		log.Printf("serveur démarré sur le port %s", port)
-		serverErr <- srv.ListenAndServe()
+		log.Printf("serveur démarré sur %s", ln.Addr())
+		serverErr <- srv.Serve(ln)
 	}()
 
 	select {
