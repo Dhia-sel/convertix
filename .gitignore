@@ -1,0 +1,16 @@
+/convertix
+/convertix.exe
+*.exe
+bin/
+dist/
+*.test
+*.out
+coverage.html
+.env
+.env.*
+*.pem
+*.key
+.vscode/
+.idea/ 
+.DS_Store
+Thumbs.db
