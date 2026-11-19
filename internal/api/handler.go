@@ -3,11 +3,12 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"github.com/Dhia-sel/convertix/internal/converter"
 	"log"
 	"math"
 	"net/http"
 	"strconv"
+
+	"github.com/Dhia-sel/convertix/internal/converter"
 )
 
 type convertResponse struct {

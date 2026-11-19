@@ -10,6 +10,18 @@ import (
 
 const testPath = "/healthz"
 
+func TestListenAddr(t *testing.T) {
+	t.Setenv("PORT", "")
+	if got := listenAddr(); got != ":"+defaultPort {
+		t.Fatalf("listenAddr() = %q, attendu %q", got, ":"+defaultPort)
+	}
+
+	t.Setenv("PORT", "9090")
+	if got := listenAddr(); got != ":9090" {
+		t.Fatalf("listenAddr() = %q, attendu %q", got, ":9090")
+	}
+}
+
 func TestRun_ServesThenShutsDown(t *testing.T) {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -27,7 +39,7 @@ func TestRun_ServesThenShutsDown(t *testing.T) {
 	if err != nil {
 		t.Fatalf("requête : %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("statut = %d, attendu %d", resp.StatusCode, http.StatusOK)
@@ -50,7 +62,9 @@ func TestRun_ReturnsErrorWhenListenerClosed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ln.Close()
+	if err := ln.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := run(context.Background(), ln); err == nil {
 		t.Fatal("run aurait dû retourner une erreur avec un listener fermé")

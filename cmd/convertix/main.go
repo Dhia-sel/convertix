@@ -21,12 +21,7 @@ const (
 )
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
-	}
-
-	ln, err := net.Listen("tcp", ":"+port)
+	ln, err := net.Listen("tcp", listenAddr())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -34,6 +29,14 @@ func main() {
 	if err := run(context.Background(), ln); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func listenAddr() string {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = defaultPort
+	}
+	return ":" + port
 }
 
 func run(ctx context.Context, ln net.Listener) error {
