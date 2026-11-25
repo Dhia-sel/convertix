@@ -1,3 +1,4 @@
+// Package converter converts values between units of length and mass.
 package converter
 
 import (
@@ -6,7 +7,9 @@ import (
 )
 
 var (
-	ErrUnknownUnit       = errors.New("l'unité recherchée est inconnue")
+	// ErrUnknownUnit is returned when a unit is not recognised.
+	ErrUnknownUnit = errors.New("l'unité recherchée est inconnue")
+	// ErrIncompatibleUnits is returned when the two units are of different kinds.
 	ErrIncompatibleUnits = errors.New("les unités sont incompatibles")
 )
 
@@ -42,6 +45,9 @@ var units = map[string]unitInfo{
 	"tonne longue": {factor: 1016.04691, category: "mass"},
 }
 
+// Convert converts value from the unit "from" to the unit "to".
+// It returns ErrUnknownUnit if a unit is not recognised, and
+// ErrIncompatibleUnits if the two units are of different kinds.
 func Convert(value float64, from, to string) (float64, error) {
 	unitFrom, okFrom := units[from]
 	if !okFrom {

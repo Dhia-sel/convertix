@@ -1,3 +1,5 @@
+// Package api exposes the HTTP handler of the unit conversion API
+// (GET /convert and GET /healthz).
 package api
 
 import (
@@ -17,22 +19,20 @@ type convertResponse struct {
 	To     string  `json:"to"`
 	Result float64 `json:"result"`
 }
-
 type errorResponse struct {
 	Error string `json:"error"`
 }
 
+// NewHandler returns the HTTP handler serving GET /healthz and GET /convert.
 func NewHandler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handleHealth)
 	mux.HandleFunc("GET /convert", handleConvert)
 	return mux
 }
-
 func handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
-
 func handleConvert(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	valueStr := q.Get("value")
@@ -43,13 +43,11 @@ func handleConvert(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "paramètres requis : value, from, to")
 		return
 	}
-
 	value, err := strconv.ParseFloat(valueStr, 64)
 	if err != nil || math.IsNaN(value) || math.IsInf(value, 0) {
 		writeError(w, http.StatusBadRequest, "value doit être un nombre fini")
 		return
 	}
-
 	result, err := converter.Convert(value, from, to)
 	if err != nil {
 		switch {
@@ -63,12 +61,10 @@ func handleConvert(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-
 	if math.IsNaN(result) || math.IsInf(result, 0) {
 		writeError(w, http.StatusUnprocessableEntity, "résultat hors limites")
 		return
 	}
-
 	writeJSON(w, http.StatusOK, convertResponse{
 		Value:  value,
 		From:   from,
@@ -76,15 +72,12 @@ func handleConvert(w http.ResponseWriter, r *http.Request) {
 		Result: result,
 	})
 }
-
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, errorResponse{Error: msg})
 }
-
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-
 	body, err := json.Marshal(v)
 	if err != nil {
 		log.Printf("writeJSON: %v", err)
@@ -92,7 +85,6 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 		_, _ = w.Write([]byte(`{"error":"erreur interne"}`))
 		return
 	}
-
 	w.WriteHeader(status)
 	_, _ = w.Write(body)
 }
