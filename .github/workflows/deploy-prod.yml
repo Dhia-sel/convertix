@@ -1,0 +1,22 @@
+# Squelette : le déploiement en production n'est pas encore implémenté.
+# Le compte AWS disponible n'a pas IAM, donc l'authentification par OIDC
+# (GitHub vers AWS sans clé) est impossible. La cible et le mode
+# d'authentification sont à décider avant d'écrire les vraies étapes.
+name: Deploy prod
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: prod
+    steps:
+      - name: Not implemented yet
+        run: |
+          echo "Déploiement prod non implémenté (cible AWS à décider)."
+          exit 1
